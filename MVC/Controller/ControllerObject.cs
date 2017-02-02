@@ -9,7 +9,11 @@ namespace MVC.Controller
 {
     public abstract class ControllerObject : IDisposable
     {
+        public Session Session { get; internal set; }
         internal HttpListenerContext _requestContext { set; get; }
+        public Dictionary<string, string> Parameters { get; internal set; }
+
+        public virtual void AfterConstruct() { }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

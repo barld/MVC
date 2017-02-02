@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MVC.Routing;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -10,21 +11,15 @@ namespace MVC
 {
     public class MVCApp
     {
-        private ControllerFactory cFactory;
+        private Dictionary<string, Session> sessions = new Dictionary<string, Session>();
 
+        private readonly IEnumerable<IRoute> Routes;
         public string ListenAddress { get; }
-        public MVCApp(string listenAddress) : this(listenAddress, Assembly.GetEntryAssembly()) { }
 
-        public MVCApp(string listenAddress, Assembly assembly)
+        public MVCApp(string listenAddress, IEnumerable<IRoute> routes)
         {
             ListenAddress = listenAddress;
-            cFactory = new ControllerFactory(assembly);
-        }
-
-        public MVCApp(string listenAddress, IEnumerable<Type> controllers)
-        {
-            ListenAddress = listenAddress;
-            cFactory = new ControllerFactory(controllers);
+            Routes = routes;
         }
 
         public void Run()
@@ -38,17 +33,41 @@ namespace MVC
 
             while (true)
             {
+                try
+                {
+                    var context = listner.GetContext();
+                    Console.WriteLine(context.Request.Url);
 
-                var context = listner.GetContext();
+                    var response = context.Response;
+                    string cValue = string.Empty;
 
-                var response = context.Response;
+                    if (context.Request.Cookies["id"] == null || (context.Request.Cookies["id"] != null && !sessions.ContainsKey(context.Request.Cookies["id"].Value)))
+                    {
+                        var cookie = new Cookie("id", WebUtility.UrlEncode(Crypto.Keys.GetRandomKey(20)));
 
-                Console.WriteLine(context.Request.HttpMethod);
+                        cookie.Secure = true;
+                        cookie.HttpOnly = true;
 
-                var rHandler = new RequestHandler(cFactory, context);
-                rHandler.HandelToView().Respond(context.Response);
+                        context.Response.SetCookie(cookie);
 
-                var controller = cFactory.GetByRawUrl(WebUtility.UrlDecode(context.Request.RawUrl));
+                        if (!sessions.ContainsKey(cookie.Value))
+                            sessions.Remove(cookie.Value);
+                        sessions.Add(cookie.Value, new Session { Data = new Dictionary<string, object>() });
+                        cValue = cookie.Value;
+                    }
+                    else
+                    {
+                        cValue = context.Request.Cookies["id"].Value;
+                    }
+
+                    Console.WriteLine(context.Request.HttpMethod);
+
+                    var session = sessions[cValue];
+
+                    var rHandler = new RequestHandler(Routes, context);
+                    rHandler.HandelToView(session).Respond(context.Response);
+                }
+                catch(Exception e) { Console.WriteLine(e); }//catch all exceptions. otherwise the server will crash                
             }
         }
 

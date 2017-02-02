@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace MVC.View
 {
-    public class RawObjectView : ViewObject
+    public class ErrorView : ViewObject
     {
-        public RawObjectView(object o)
+        public ErrorView()
         {
-            Content = o?.ToString() ?? "NULL";
-            ContentType = "text/html";
+            Content = "{Succes: false}";
+            StatusCode = 500;
+            ContentType = "application/json";
         }
 
     }

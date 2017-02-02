@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace MVC.View
 {
-    public class RawObjectView : ViewObject
+    public class AccesDeniedView : ViewObject
     {
-        public RawObjectView(object o)
+        public AccesDeniedView()
         {
-            Content = o?.ToString() ?? "NULL";
-            ContentType = "text/html";
+            StatusCode = 403;
+            Content = "<h1>Acces denied</h1>";
         }
 
     }
